@@ -14,8 +14,11 @@ module Wisper
       include ::Sidekiq::Worker
 
       def perform(yml)
-        (subscriber, event, args) = ::YAML.load(yml)
-        subscriber.public_send(event, *args)
+        (subscriber, event, args, kwargs) = ::YAML.load(yml)
+        if subscriber.is_a?(String)
+          subscriber = Object.const_get(subscriber)
+        end
+        subscriber.public_send(event, *args, **kwargs)
       end
     end
 
@@ -26,13 +29,13 @@ module Wisper
       end
     end
 
-    def broadcast(subscriber, publisher, event, args)
+    def broadcast(subscriber, publisher, event, *args, **kwargs)
       options = sidekiq_options(subscriber)
       schedule_options = sidekiq_schedule_options(subscriber, event)
 
       Worker.set(options).perform_in(
         schedule_options.fetch(:delay, 0),
-        ::YAML.dump([subscriber, event, args])
+        ::YAML.dump([subscriber.to_s, event, args, kwargs])
       )
     end
 

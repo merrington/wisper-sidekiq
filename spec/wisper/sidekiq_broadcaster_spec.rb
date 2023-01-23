@@ -10,7 +10,7 @@ RSpec.describe Wisper::SidekiqBroadcaster do
   end
 
   class RegularSubscriberUnderTest
-    def self.it_happened(*_)
+    def self.it_happened(*_args, **_kwargs)
     end
   end
 
@@ -149,11 +149,12 @@ RSpec.describe Wisper::SidekiqBroadcaster do
       let(:subscriber) { RegularSubscriberUnderTest }
       let(:event) { 'it_happened' }
       let(:args) { [1,2,3] }
+      let(:kwargs) { { key: 'value' } }
 
-      subject(:broadcast_event) { described_class.new.broadcast(subscriber, nil, event, args) }
+      subject(:broadcast_event) { described_class.new.broadcast(subscriber, nil, event, *args, **kwargs) }
 
       it 'subscriber receives event with corrects args' do
-        expect(RegularSubscriberUnderTest).to receive(event).with(*args)
+        expect(RegularSubscriberUnderTest).to receive(event).with(*args, **kwargs)
 
         Sidekiq::Testing.inline! { broadcast_event }
       end
