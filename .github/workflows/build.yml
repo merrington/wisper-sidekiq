@@ -17,11 +17,12 @@ jobs:
         image: redis
         ports:
           - 6379:6379
+    env:
+      BUNDLE_WITHOUT: "extras"
+      CI: 'true'
     steps:
       - uses: actions/checkout@v3
       - uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_WITHOUT: "extras"
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
