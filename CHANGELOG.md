@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+## [2.0] - 23/Jan/2023
+- Update to support Ruby 3 keyword arguments/Wisper 3
+
 ## [1.3.0] - 25/Nov/2019
 
 - Add the ability to pass `sidekiq_schedule_options` options in order to schedule jobs to be run in the future
