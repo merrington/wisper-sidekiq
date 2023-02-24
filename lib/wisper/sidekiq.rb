@@ -15,9 +15,6 @@ module Wisper
 
       def perform(yml)
         (subscriber, event, args, kwargs) = ::YAML.respond_to?(:unsafe_load) ? ::YAML.unsafe_load(yml) : ::YAML.load(yml)
-        if subscriber.is_a?(String)
-          subscriber = Object.const_get(subscriber)
-        end
         subscriber.public_send(event, *args, **kwargs)
       end
     end
@@ -35,7 +32,7 @@ module Wisper
 
       Worker.set(options).perform_in(
         schedule_options.fetch(:delay, 0),
-        ::YAML.dump([subscriber.to_s, event, args, kwargs])
+        ::YAML.dump([subscriber, event, args, kwargs])
       )
     end
 
