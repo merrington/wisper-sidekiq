@@ -11,6 +11,7 @@ RSpec.describe Wisper::SidekiqBroadcaster do
 
   class RegularSubscriberUnderTest
     def self.it_happened(*_args, **_kwargs)
+      binding.pry
     end
   end
 
@@ -154,8 +155,12 @@ RSpec.describe Wisper::SidekiqBroadcaster do
 
         subject(:broadcast_event) { described_class.new.broadcast(subscriber, nil, event, *args) }
 
-        it 'subscriber receives event with corrects args' do
-          expect(RegularSubscriberUnderTest).to receive(event).with(*args)
+        fit 'subscriber receives event with corrects args' do
+          expect(RegularSubscriberUnderTest).to receive(event).with(*args, **{})
+          # **{} is needed because of how it evaluates under different version of ruby
+          # `#broadcast` will be receiving `**kwargs = nil` and write this as {} to sidekiq/redis. When the 
+          # SidekiqBroadcaster::Worker class parses the yaml and calls the method, it will be passing
+          # `**{}` to as the kwargs - in ruby 2.7 this is treated as an empty hash, but in ruby 3.0 it isn't passed at all
 
           Sidekiq::Testing.inline! { broadcast_event }
         end
