@@ -148,15 +148,57 @@ RSpec.describe Wisper::SidekiqBroadcaster do
     context 'when provides subscriber with args' do
       let(:subscriber) { RegularSubscriberUnderTest }
       let(:event) { 'it_happened' }
-      let(:args) { [1,2,3] }
-      let(:kwargs) { { key: 'value' } }
 
-      subject(:broadcast_event) { described_class.new.broadcast(subscriber, nil, event, *args, **kwargs) }
+      context 'with positional arguments only' do
+        let(:args) { [1,2,3] }
 
-      it 'subscriber receives event with corrects args' do
-        expect(RegularSubscriberUnderTest).to receive(event).with(*args, **kwargs)
+        subject(:broadcast_event) { described_class.new.broadcast(subscriber, nil, event, *args) }
 
-        Sidekiq::Testing.inline! { broadcast_event }
+        it 'subscriber receives event with corrects args' do
+          expect(RegularSubscriberUnderTest).to receive(event).with(*args)
+
+          Sidekiq::Testing.inline! { broadcast_event }
+        end
+      end
+
+      context 'with keyword arguments only' do
+        let(:kwargs) { { a: 1, b: 2, c: 3 } }
+
+        subject(:broadcast_event) { described_class.new.broadcast(subscriber, nil, event, **kwargs) }
+
+        it 'subscriber receives event with corrects args' do
+          expect(RegularSubscriberUnderTest).to receive(event).with(**kwargs)
+
+          Sidekiq::Testing.inline! { broadcast_event }
+        end
+      end
+
+      context 'with positional and keyword arguments' do
+        let(:args) { [1,2,3] }
+        let(:kwargs) { { a: 1, b: 2, c: 3 } }
+
+        subject(:broadcast_event) { described_class.new.broadcast(subscriber, nil, event, *args, **kwargs) }
+
+        it 'subscriber receives event with corrects args' do
+          expect(RegularSubscriberUnderTest).to receive(event).with(*args, **kwargs)
+
+          Sidekiq::Testing.inline! { broadcast_event }
+        end
+      end
+
+      context 'message published under previous version' do
+        let(:kwargs) { { a: 1, b: 2, c: 3 } }
+
+        subject(:broadcast_event) do
+          # This is what the previous version of Wisper::SidekiqBroadcaster did when publishing
+          Wisper::SidekiqBroadcaster::Worker.perform_in(0, ::YAML.dump([subscriber, event, kwargs]))
+        end
+
+        it 'subscriber receives event with corrects args' do
+          expect(RegularSubscriberUnderTest).to receive(event).with(**kwargs)
+
+          Sidekiq::Testing.inline! { broadcast_event }
+        end
       end
     end
   end

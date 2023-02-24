@@ -15,6 +15,15 @@ module Wisper
 
       def perform(yml)
         (subscriber, event, args, kwargs) = ::YAML.respond_to?(:unsafe_load) ? ::YAML.unsafe_load(yml) : ::YAML.load(yml)
+
+        # if `kwargs` is nil, then it means the YAML (sidekiq job parameters) was created by a previous version of this gem before keyword arguments were supported
+        # (otherwise, `kwargs` would be an empty hash if they weren't provided)
+        # in that case, if args is a hash, then we assume it is the keyword arguments
+        if kwargs.nil? && args.is_a?(Hash)
+          kwargs = args
+          args = []
+        end
+
         subscriber.public_send(event, *args, **kwargs)
       end
     end
